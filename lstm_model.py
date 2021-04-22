@@ -1,5 +1,5 @@
 from tensorflow.keras.layers import Input, Dense, LSTM, Dropout
-from tensorflow.keras.models import Sequential
+from tensorflow.keras.models import Model
 
 
 def lstm_block(input_tensor, nb_layers, units, dropout):
@@ -14,14 +14,17 @@ def lstm_block(input_tensor, nb_layers, units, dropout):
     """
 
     tensor = input_tensor
-    for i_layer in range(nb_layers):
-        tensor = LSTM(units=units)(tensor)
+    for i_layer in range(nb_layers-1):
+        tensor = LSTM(units=units, return_sequences=True)(tensor)
         tensor = Dropout(dropout)(tensor)
+
+    tensor = LSTM(units=units)(tensor)
+    tensor = Dropout(dropout)(tensor)
 
     return tensor
 
 
-def lstm(num_timesteps, num_features, num_outputs=1, nb_layers=4, units=50, dropout=0.2, activation='linear'):
+def lstm(num_timesteps, num_features, num_outputs=1, nb_layers=4, units=50, dropout=0.2, activation=None):
     """
     Build lstm model
     :param num_timesteps: number of timesteps in the input
@@ -45,6 +48,6 @@ def lstm(num_timesteps, num_features, num_outputs=1, nb_layers=4, units=50, drop
     outputs = Dense(units=num_outputs, activation=activation)(features)
 
     # Create the model with defined inputs and outputs
-    model = Sequential(inputs=inputs, outputs=outputs)
+    model = Model(inputs=inputs, outputs=outputs)
 
     return model
