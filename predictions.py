@@ -3,42 +3,43 @@ from abc import ABC, abstractmethod
 
 class ModelPrediction(ABC):
 
+    def __init__(self):
+        self.first_index_to_predict = 0
+
     @abstractmethod
-    def learn(self, past_data, parameters):
+    def learn(self, data, last_index_to_learn):
         pass
 
     @abstractmethod
-    def predict(self):
+    def predict(self, data, first_index_to_predict):
         pass
 
 
-class Predictions:
-    def __init__(self, past_data, expected_data):
+class ModelsPrediction:
+    def __init__(self, data, last_index_for_learning, expected_data):
         """
-
-        :param past_data: data to learn, list of stocks, float
+        :param data: data to learn/predict, list of stocks, float
+        :param last_index_for_learning: last index in the data to use for model training, integer
         :param expected_data: data to predict, list of stocks, float
         """
 
-        self.past = past_data
+        self.data = data
+        self.last_index_for_learning = last_index_for_learning
         self.expectation = expected_data
         self.models = []
-        self.parameters = []
         self.prediction = []
         self.kpi = []
 
-    def learn(self, models, parameters):
+    def learn(self, models):
         """
-        Make the data learn on the past data
+        Make the data learn on the data devoted for learning
         :param models: models to predict the data, list of classes, prediction_class
-        :param parameters: parameters of the used model, list of dict
         """
 
         self.models = models
-        self.parameters = parameters
 
-        for model, param in zip(self.models, self.parameters):
-            model.learn(self.past_data, param)
+        for model in self.models:
+            model.learn(self.data, self.last_index_for_learning)
 
     def predict(self):
         """
@@ -46,7 +47,7 @@ class Predictions:
         """
 
         for model in self.models:
-            prediction = model.predict()
+            prediction = model.predict(self.data, self.last_index_for_learning + 1)
             self.prediction.append(prediction)
 
     def measure_kpi(self):
