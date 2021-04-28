@@ -5,6 +5,7 @@ import numpy as np
 from predictions import *
 from arima_model import ArimaPrediction
 from lstm_model import LstmPredictor
+from smartless_model import DelayPredictor
 
 # Parameters
 first_index_to_predict = 299
@@ -18,12 +19,14 @@ stock = np.divide(stock, 150.)
 # Models
 arima = ArimaPrediction({'p': 4, 'q': 0, 'd': 1})
 lstm = LstmPredictor({'nb_timesteps': 10, 'nb_features': 1})
+delay = DelayPredictor()
 
 # Predictions
-models = [arima, lstm]
-models_prediction = ModelsPrediction(stock, last_index_for_learning=first_index_to_predict-1, expected_data=[])
+models = [arima, lstm, delay]
+models_prediction = ModelsPrediction(stock, last_index_for_learning=first_index_to_predict-1)
 models_prediction.learn(models)
 models_prediction.predict()
+kpi = models_prediction.measure_kpi(stock[first_index_to_predict:])
 
 # Display data
 plt.figure()
