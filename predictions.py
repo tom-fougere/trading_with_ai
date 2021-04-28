@@ -1,3 +1,5 @@
+import numpy as np
+
 from abc import ABC, abstractmethod
 
 
@@ -16,16 +18,14 @@ class ModelPrediction(ABC):
 
 
 class ModelsPrediction:
-    def __init__(self, data, last_index_for_learning, expected_data):
+    def __init__(self, data, last_index_for_learning):
         """
         :param data: data to learn/predict, list of stocks, float
         :param last_index_for_learning: last index in the data to use for model training, integer
-        :param expected_data: data to predict, list of stocks, float
         """
 
         self.data = data
         self.last_index_for_learning = last_index_for_learning
-        self.expectation = expected_data
         self.models = []
         self.prediction = []
         self.kpi = []
@@ -50,14 +50,17 @@ class ModelsPrediction:
             prediction = model.predict(self.data, self.last_index_for_learning + 1)
             self.prediction.append(prediction)
 
-    def measure_kpi(self):
+    def measure_kpi(self, expectation):
         """
         Measure KPI on all prediction/expectation
         :return
             - kpi: kpi of all models, list of kpi
         """
 
-        for pred, expect in zip(self.prediction, self.expectation):
-            self.kpi.append(pred - expect)
+        for pred, expect in zip(self.prediction, expectation):
+            mse = np.mean(np.square(pred - expect))
+            rmse = np.square(mse)
+            metrics = {'mse': mse, 'rmse': rmse}
+            self.kpi.append(metrics)
 
         return self.kpi
