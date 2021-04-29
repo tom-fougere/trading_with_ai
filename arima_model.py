@@ -14,7 +14,7 @@ class ArimaPrediction(ModelPrediction):
         # size/width of the moving average window, integer
         self.q = parameters['q']
 
-    def learn(self, data=[], last_index_to_learn=[]):
+    def learn(self, data=[], last_index_to_learn=[], evaluation=False):
         """
         No learning stage for arima prediction
         """

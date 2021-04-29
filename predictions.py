@@ -9,7 +9,7 @@ class ModelPrediction(ABC):
         self.first_index_to_predict = 0
 
     @abstractmethod
-    def learn(self, data, last_index_to_learn):
+    def learn(self, data, last_index_to_learn, evaluation):
         pass
 
     @abstractmethod
@@ -30,16 +30,17 @@ class ModelsPrediction:
         self.prediction = []
         self.kpi = []
 
-    def learn(self, models):
+    def learn(self, models, evaluation=False):
         """
         Make the data learn on the data devoted for learning
         :param models: models to predict the data, list of classes, prediction_class
+        :param evaluation: Boolean to evaluate test dataset, True/False
         """
 
         self.models = models
 
         for model in self.models:
-            model.learn(self.data, self.last_index_for_learning)
+            model.learn(self.data, self.last_index_for_learning, evaluation=evaluation)
 
     def predict(self):
         """

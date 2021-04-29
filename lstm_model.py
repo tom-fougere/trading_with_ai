@@ -72,6 +72,7 @@ class LstmPredictor(ModelPrediction):
 
         # build model
         self.lstm = lstm(self.nb_timesteps, self.nb_features, self.nb_outputs, nb_layers, units, dropout, activation)
+        self.fit_history = []
 
         # Extract compilation parameters
         self.optimizer = parameters['optimizer'] if 'optimizer' in parameters.keys() else 'adam'
@@ -79,7 +80,7 @@ class LstmPredictor(ModelPrediction):
         self.epochs = parameters['epochs'] if 'epochs' in parameters.keys() else 100
         self.batch_size = parameters['batch_size'] if 'batch_size' in parameters.keys() else 32
 
-    def learn(self, data, last_index_to_learn):
+    def learn(self, data, last_index_to_learn, evaluation):
 
         # Build datasets
         x_train = []
@@ -91,8 +92,22 @@ class LstmPredictor(ModelPrediction):
         # Convert to tensor (samples, timesteps, features)
         x_train, y_train = np.array(x_train), np.array(y_train)
 
+        if evaluation is True:
+            x_test = []
+            y_test = []
+            for i in range(last_index_to_learn + 1, data.shape[0]):
+                x_test.append(data[i - self.nb_timesteps:i])
+                y_test.append(data[i, :self.nb_outputs])
+
+            # Convert to tensor (samples, timesteps, features)
+            x_test, y_test = np.array(x_test), np.array(y_test)
+            validation_data = (x_test, y_test)
+        else:
+            validation_data = None
+
         self.lstm.compile(optimizer=self.optimizer, loss=self.loss)
-        self.lstm.fit(x_train, y_train, epochs=self.epochs, batch_size=self.batch_size)
+        self.fit_history = self.lstm.fit(x_train, y_train, epochs=self.epochs, batch_size=self.batch_size,
+                                         validation_data=validation_data)
 
     def predict(self, data, first_index_to_predict):
         # Build dataset

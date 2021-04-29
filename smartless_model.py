@@ -6,7 +6,7 @@ class DelayPredictor(ModelPrediction):
         super().__init__()
         self.delay = parameters['delay'] if 'delay' in parameters.keys() else 1
 
-    def learn(self, data, last_index_to_learn):
+    def learn(self, data, last_index_to_learn, evaluation=False):
         pass
 
     def predict(self, data, first_index_to_predict):
