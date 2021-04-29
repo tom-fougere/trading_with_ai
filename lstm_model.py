@@ -63,14 +63,14 @@ class LstmPredictor(ModelPrediction):
         # Extract model parameters
         self.nb_timesteps = parameters['nb_timesteps']
         self.nb_features = parameters['nb_features']
-        nb_outputs = parameters['num_outputs'] if 'num_outputs' in parameters.keys() else 1
+        self.nb_outputs = parameters['nb_outputs'] if 'nb_outputs' in parameters.keys() else 1
         nb_layers = parameters['nb_layers'] if 'nb_layers' in parameters.keys() else 4
         units = parameters['units'] if 'units' in parameters.keys() else 50
         dropout = parameters['dropout'] if 'dropout' in parameters.keys() else 0.2
         activation = parameters['activation'] if 'activation' in parameters.keys() else None
 
         # build model
-        self.lstm = lstm(self.nb_timesteps, self.nb_features, nb_outputs, nb_layers, units, dropout, activation)
+        self.lstm = lstm(self.nb_timesteps, self.nb_features, self.nb_outputs, nb_layers, units, dropout, activation)
 
         # Extract compilation parameters
         self.optimizer = parameters['optimizer'] if 'optimizer' in parameters.keys() else 'adam'
@@ -83,13 +83,12 @@ class LstmPredictor(ModelPrediction):
         # Build datasets
         x_train = []
         y_train = []
-        for i in range(self.nb_timesteps, len(data) - 1):
+        for i in range(self.nb_timesteps, data.shape[0] - 1):
             x_train.append(data[i - self.nb_timesteps:i])
-            y_train.append(data[i + 1])
-        x_train, y_train = np.array(x_train), np.array(y_train)
+            y_train.append(data[i + 1, :self.nb_outputs])
 
-        # Convert to tensor (X, Y, 1)
-        x_train = np.reshape(x_train, (x_train.shape[0], x_train.shape[1], 1))
+        # Convert to tensor (samples, timesteps, features)
+        x_train, y_train = np.array(x_train), np.array(y_train)
 
         self.lstm.compile(optimizer=self.optimizer, loss=self.loss)
         self.lstm.fit(x_train, y_train, epochs=self.epochs, batch_size=self.batch_size)
@@ -97,12 +96,11 @@ class LstmPredictor(ModelPrediction):
     def predict(self, data, first_index_to_predict):
         # Build dataset
         x_test = []
-        for i in range(first_index_to_predict, len(data)):
+        for i in range(first_index_to_predict, data.shape[0]):
             x_test.append(data[i - self.nb_timesteps:i])
 
-        # Convert to tensor (X, Y, 1)
+        # Convert to tensor (samples, timesteps, features)
         x_test = np.array(x_test)
-        x_test = np.reshape(x_test, (x_test.shape[0], x_test.shape[1], 1))
 
         prediction = self.lstm.predict(x_test)
 
