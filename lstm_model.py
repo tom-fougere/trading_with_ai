@@ -64,6 +64,7 @@ class LstmPredictor(ModelPrediction):
         self.nb_timesteps = parameters['nb_timesteps']
         self.nb_features = parameters['nb_features']
         self.nb_outputs = parameters['nb_outputs'] if 'nb_outputs' in parameters.keys() else 1
+        self.day_prediction = parameters['day_prediction'] if 'day_prediction' in parameters.keys() else 1
         nb_layers = parameters['nb_layers'] if 'nb_layers' in parameters.keys() else 4
         units = parameters['units'] if 'units' in parameters.keys() else 50
         dropout = parameters['dropout'] if 'dropout' in parameters.keys() else 0.2
@@ -83,9 +84,9 @@ class LstmPredictor(ModelPrediction):
         # Build datasets
         x_train = []
         y_train = []
-        for i in range(self.nb_timesteps, data.shape[0] - 1):
+        for i in range(self.nb_timesteps, last_index_to_learn):
             x_train.append(data[i - self.nb_timesteps:i])
-            y_train.append(data[i + 1, :self.nb_outputs])
+            y_train.append(data[i, :self.nb_outputs])
 
         # Convert to tensor (samples, timesteps, features)
         x_train, y_train = np.array(x_train), np.array(y_train)
