@@ -1,40 +1,83 @@
-import yfinance as yf
-import matplotlib.pyplot as plt
+import talos
 import numpy as np
+import matplotlib.pyplot as plt
 
-from lstm_model import lstm
+from preprocessing_stocks import download_stocks_data
+from lstm_model import LstmPredictor
 
 
-aapl = yf.Ticker('AAPL')
-history = aapl.history(period='24mo')
-stock = history['Open'].tolist()
+# Data
+stocks, scaler = download_stocks_data(['AAPL'], ['Close'], '1mo')
 
-# plt.figure()
-# plt.plot(stock, 'o-')
-# plt.show()
 
-timestep = 3
+def talos_lstm_model(data, y_train, x_val, y_val, parameters):
+    # Build model
+    lstm = LstmPredictor({'nb_timesteps': parameters['nb_timesteps'],
+                          'nb_features': parameters['nb_features'],
+                          'nb_outputs': parameters['nb_outputs'],
+                          'nb_layers': parameters['nb_layers'],
+                          'units': parameters['units'],
+                          'dropout': parameters['dropout'],
+                          'activation': parameters['activation'],
+                          'optimizer': parameters['optimizer'],
+                          'loss': parameters['loss'],
+                          'epochs': parameters['epochs'],
+                          'batch_size': parameters['batch_size']})
 
-# Build datasets
-X_train = []
-y_train = []
-for i in range(timestep, len(stock) - 1):
-    X_train.append(np.divide(stock[i - timestep:i], 150.))
-    y_train.append(np.divide(stock[i + 1], 150.))
-X_train, y_train = np.array(X_train), np.array(y_train)
+    # Fit data
+    lstm.learn(data, parameters['last_index_to_learn'], evaluation=True)
 
-X_train = np.reshape(X_train, (X_train.shape[0], X_train.shape[1], 1))
+    return lstm.fit_history, lstm.lstm
 
-model = lstm(timestep, 1, 1, units=50)
-model.compile(optimizer='adam', loss='mean_squared_error')
-model.fit(X_train, y_train, epochs=100, batch_size=32)
 
-predicted = np.multiply(model.predict(X_train), 150.)
+# then we can go ahead and set the parameter space
+params = {'nb_timesteps': [10],
+          'nb_features': [1],
+          'nb_outputs': [1],
+          'nb_layers': [4],
+          'units': [50],
+          'dropout': [0.2],
+          'optimizer': ['adam'],
+          'loss': ['mean_squared_error'],
+          'activation': ['linear'],
+          'epochs': [100],
+          'batch_size': [32],
+          'last_index_to_learn': [15]}
+
+params1 = {'nb_timesteps': 10,
+          'nb_features': 1,
+          'nb_outputs': 1,
+          'nb_layers': 4,
+          'units': 50,
+          'dropout': 0.2,
+          'optimizer': 'adam',
+          'loss': 'mean_squared_error',
+          'activation': 'linear',
+          'epochs': 100,
+          'batch_size': 32,
+          'last_index_to_learn': 15}
+
+hist, mo = talos_lstm_model(stocks, stocks, [], [], params1)
 
 plt.figure()
-plt.plot(stock[timestep:], 'o-')
-plt.plot(predicted)
-plt.show()
+plt.plot(hist.history['loss'])
+plt.plot(hist.history['val_loss'])
+plt.draw()
 
+# and run the experiment
+t = talos.Scan(x=stocks,
+               y=np.zeros(stocks.shape),
+               model=talos_lstm_model,
+               params=params,
+               experiment_name='lstm_test',
+               val_split=0.,
+               reduction_interval=10,
+               reduction_window=1,
+               reduction_threshold=0.1,)
+
+# plt.figure()
+plt.plot(t.round_history[0]['loss'])
+plt.plot(t.round_history[0]['val_loss'])
+plt.show()
 
 print('end')
